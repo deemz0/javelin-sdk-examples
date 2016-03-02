@@ -48,6 +48,11 @@ public class ScanActivity extends ListActivity {
     // Scanner for API level 21+
     BluetoothLeScanner scanner;
 
+    private BluetoothAdapter.LeScanCallback mLeScanCallback;
+
+    // For Lollipop and above
+    private ScanCallback newCallback;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,6 +60,25 @@ public class ScanActivity extends ListActivity {
 
         mHandler = new Handler();
         context = this.getApplicationContext();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            newCallback = new ScanCallback() {
+                @Override
+                public void onScanResult(int callbackType, ScanResult result) {
+                    super.onScanResult(callbackType, result);
+                    storeScanResult(result.getDevice(), result.getRssi());
+                }
+            };
+        }
+        else{
+            mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
+                @Override
+                public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+                    storeScanResult(device, rssi);
+                }
+            };
+        }
+        
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -148,24 +172,7 @@ public class ScanActivity extends ListActivity {
         }
         invalidateOptionsMenu();
     }
-
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-                @Override
-                public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-                    storeScanResult(device, rssi);
-                }
-            };
-
-    // For Lollipop and above
-    private ScanCallback newCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
-            storeScanResult(result.getDevice(), result.getRssi());
-        }
-    };
-
+    
     public void storeScanResult(final BluetoothDevice device, final int rssi) {
         runOnUiThread(new Runnable() {
             @Override
